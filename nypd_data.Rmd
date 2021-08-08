@@ -1,0 +1,169 @@
+---
+title: "Data Science as Field Week 3"
+author: "Sam E."
+date: "7/16/2021"
+output: html_document
+---
+
+
+```{r packages, message=FALSE}
+library(tidyverse)
+library(visreg)
+library(vcd)
+```
+
+## NYPD Data Project
+
+The link of the data: <https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD>
+
+We will first read in the data.
+
+```{r read in nypd_data, message=FALSE}
+url_in <- 'https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD'
+nypd_data <- read_csv(url_in)
+```
+
+# Tidying
+```{r tidying nypd_data}
+#Removing non-useful columns
+nypd_data <- nypd_data %>%
+  select(-c(Lon_Lat, X_COORD_CD, Y_COORD_CD, INCIDENT_KEY, LOCATION_DESC))
+
+#Renaming column titles
+nypd_data <- nypd_data %>%
+  rename(date = OCCUR_DATE, time = OCCUR_TIME, boro = BORO, precinct = PRECINCT, jurisdiction = JURISDICTION_CODE, murder_flag = STATISTICAL_MURDER_FLAG, perp_age = PERP_AGE_GROUP, perp_sex = PERP_SEX, perp_race = PERP_RACE, vic_age = VIC_AGE_GROUP, vic_sex = VIC_SEX, vic_race = VIC_RACE, latitude = Latitude, longitude = Longitude)
+
+#Changing date to date format
+nypd_data$date <- as.Date(nypd_data$date, format = '%m/%d/%y')
+
+#Removing NA's and creating new dataframe with no nulls of perp data
+perp_sex_clean <- na.omit(nypd_data[, 8])
+perp_race_clean <- na.omit(nypd_data[, 9])
+clean_perp_data <- data.frame('perp_sex' = perp_sex_clean, 'perp_race' = perp_race_clean)
+
+
+```
+
+# Visualizing and Analyzing
+```{r visualize and analyze nypd_data, echo=FALSE}
+
+#Bar Chart of Proportion of Perp Sex depending on Race
+ggplot(data = na.omit(subset(nypd_data, select = c(perp_race, perp_sex))), aes(x = perp_race, fill = perp_sex)) +
+geom_bar(position='fill', na.rm = TRUE) +
+theme(axis.text.x = element_text(angle=350)) + 
+scale_fill_brewer(palette = 'Set3') +
+labs(y = 'Proportion',x = 'Race', fill = 'Sex', title = 'Perp Race and Sex Proportion')
+
+#Bar Chart of Proportion of Victim race and murder
+nypd_data %>%
+  ggplot(aes(x = vic_race, fill = murder_flag)) +
+  geom_bar(position = 'fill') +
+  theme(axis.text.x = element_text(angle=350)) + 
+  scale_fill_brewer(palette = 'Set3') +
+  labs(y = 'Proportion', x = 'Race', fill = 'Murder', title = 'Victim Race and Murder Proportion')
+
+#Bar Chart of Proportion of Victim Sex and murder
+nypd_data %>%
+  ggplot(aes(x = vic_sex, fill = murder_flag)) +
+  geom_bar(position = 'fill') +
+  theme(axis.text.x = element_text(angle=350)) + 
+  scale_fill_brewer(palette = 'Set3') +
+  labs(y = 'Proportion', x = 'Sex', fill = 'Murder', title = 'Victim Sex and Murder Proportion')
+
+#Bar chart of proportion of victims' sex depending on victim race
+nypd_data %>%
+  ggplot(aes(x = vic_race, fill = vic_sex)) +
+  geom_bar(position='fill') +
+  theme(axis.text.x = element_text(angle=350)) + 
+  labs(y = 'Proportion', x = 'Race', fill = 'Sex',title = 'Victim Race and Sex Proportion') +
+  scale_fill_brewer(palette = 'Set3')
+
+#Bar chart of proportion of victims' sex depending on perp race
+ggplot(data = na.omit(subset(nypd_data, select = c(perp_race, vic_sex))), aes(x = perp_race, fill = vic_sex)) +
+  geom_bar(position = 'fill', na.rm = TRUE) +
+  theme(axis.text.x = element_text(angle = 350)) +
+  scale_fill_brewer(palette = 'Set3') +
+  labs(y = 'Proportion', x = 'Perp Race', fill = 'Victim Sex', title = 'Perp Race and Victim Sex Proportion')
+
+#Grouped Bar chart of Precinct and Murder
+nypd_data %>%
+  ggplot(aes(x = precinct, fill = murder_flag)) +
+  geom_bar(position = 'fill') +
+  scale_fill_brewer(palette = 'Set3') +
+  labs(y = 'Proportion', x = 'Precinct', fill = 'Murder Flag', title = 'Precinct and Murder Proportion')
+
+#Violin Plot of Time and Vic_race
+nypd_data %>%
+  ggplot(aes(x = vic_race, y = time)) + 
+  geom_violin(color = 'blue') + 
+  labs(title = 'Victims\' Race and Time', x = 'Victim Race', y = 'Time of Day') +
+  theme(axis.text.x = element_text(angle = 350))
+
+#Kernel Density Plot of Time and Victim Sex
+nypd_data %>%
+  ggplot(aes(x = time, fill = vic_sex)) + 
+  geom_density(alpha = 0.5) + 
+  labs(title = 'Victim Sex and Time')
+
+#Kernel Density Plot of Time and Murder 
+nypd_data %>%
+  ggplot(aes(x = time, fill = murder_flag)) + 
+  geom_density(alpha = 0.5) + 
+  labs(title = 'Time and Murder')
+
+#Kernel Density Plot of Date and Murder
+nypd_data %>%
+  ggplot(aes(x = date, fill = murder_flag)) + 
+  geom_density(alpha = 0.5) +
+  labs(title = 'Date and Murder Density', x = 'Date')
+
+#Kernel Density Plot of Date and Vic_sex
+nypd_data %>%
+  ggplot(aes(x = date, fill = vic_sex)) + 
+  geom_density(alpha = 0.5) +
+  labs(title = 'Date and Vic_Sex', x = 'Date')
+
+#Kernel Density Plot of Latitude and Murder
+nypd_data %>%
+  ggplot(aes(x = latitude, fill = murder_flag)) + 
+  geom_density(alpha = 0.5) + 
+  labs(title = 'Latitude and Murder', x = 'Latitude')
+
+#Kernel Density Plot of Longitude and Murder
+nypd_data %>%
+  ggplot(aes(x = longitude, fill = murder_flag)) + 
+  geom_density(alpha = 0.5) + 
+  labs(title = 'Longitude and Murder', x = 'Longitude')
+
+#Precincts with highest murder rates
+```
+
+# Modeling
+```{r model data}
+
+#Log reg model for murder_flag depending on certain variables
+murder_glm <- glm(murder_flag ~ vic_race + date + vic_sex + longitude + latitude + boro, family = 'binomial', data = nypd_data)
+
+#Graph for log reg depending on victim race and controlling for other variables
+visreg(murder_glm, 'vic_race', gg = TRUE, scale = 'response') +
+  labs(y = 'Probabilty Shooting is a Murder', x = 'Victim Race', title = 'Probabilty Shooting is a Murder Depending on Victim Race', subtitle = 'Controlling for date, victim sex, borough, and long/lat') +
+  theme(axis.text.x = element_text(angle = 350))
+
+#Graph for log reg depending on boro and controlling for other variables
+visreg(murder_glm, 'boro', gg = TRUE, scale = 'response') +
+  labs(y = 'Probabilty Shoting is a Murger', x = 'Borough', title = 'Probability Shooting is a Murder Depending on Borough', subtitle = 'Controlling for date, victim sex, victim race, and long/lat')
+
+#Creating Mosaic Graph for categorical data
+table <- xtabs(~boro + vic_sex + murder_flag, nypd_data)
+ftable(table)
+mosaic(table, main = 'NYPD Data', highlighting = 'murder_flag', highlighting_fill = c('lightblue', 'pink'), direction = c('v', 'h', 'v'), labeling_args = list(set_varnames = c(boro = 'Borough', vic_sex = 'Victim Sex', murder_flag = 'Murder')))
+
+#Chi-Squared of Borough and Murder Flag using p = 0.05
+table(nypd_data$boro, nypd_data$murder_flag)
+chisq.test(nypd_data$boro, nypd_data$murder_flag, correct = FALSE)
+
+
+```  
+
+# Conclusion
+With this analysis it is important to discuss biases that may have been present in the analysis. Firstly the I had bias in the data relationships I chose to analyze. For instance I believed demographic factors such as race and sex would be connected, so I analyzed these in relationship to one another as well as to instances of murder. I attempted to mitigate this by analyzing factors which I had no preconceived notions would be related such as longitude/latitude, precincts and boroughs of New York. Additionally, I did not use certain data that I did not believe would be useful. Finally, there may be bias in the way the data was collected. 
