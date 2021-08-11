@@ -16,7 +16,7 @@ library(vcd)
 
 The link of the data: <https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD>
 
-We will first read in the data.
+We will first read in the data. This data is from the city of New York and covers shootings handled by the NYPD from 2006 to 2020.
 
 ```{r read in nypd_data, message=FALSE}
 url_in <- 'https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD'
@@ -45,7 +45,7 @@ clean_perp_data <- data.frame('perp_sex' = perp_sex_clean, 'perp_race' = perp_ra
 ```
 
 # Visualizing and Analyzing
-```{r visualize and analyze nypd_data, echo=FALSE}
+```{r visualize and analyze nypd_data}
 
 #Bar Chart of Proportion of Perp Sex depending on Race
 ggplot(data = na.omit(subset(nypd_data, select = c(perp_race, perp_sex))), aes(x = perp_race, fill = perp_sex)) +
@@ -152,12 +152,6 @@ visreg(murder_glm, 'vic_race', gg = TRUE, scale = 'response') +
 #Graph for log reg depending on boro and controlling for other variables
 visreg(murder_glm, 'boro', gg = TRUE, scale = 'response') +
   labs(y = 'Probabilty Shoting is a Murger', x = 'Borough', title = 'Probability Shooting is a Murder Depending on Borough', subtitle = 'Controlling for date, victim sex, victim race, and long/lat')
-
-#Creating Mosaic Graph for categorical data
-table <- xtabs(~boro + vic_sex + murder_flag, nypd_data)
-ftable(table)
-mosaic(table, main = 'NYPD Data', highlighting = 'murder_flag', highlighting_fill = c('lightblue', 'pink'), direction = c('v', 'h', 'v'), labeling_args = list(set_varnames = c(boro = 'Borough', vic_sex = 'Victim Sex', murder_flag = 'Murder')))
-
 #Chi-Squared of Borough and Murder Flag using p = 0.05
 table(nypd_data$boro, nypd_data$murder_flag)
 chisq.test(nypd_data$boro, nypd_data$murder_flag, correct = FALSE)
@@ -167,3 +161,6 @@ chisq.test(nypd_data$boro, nypd_data$murder_flag, correct = FALSE)
 
 # Conclusion
 With this analysis it is important to discuss biases that may have been present in the analysis. Firstly the I had bias in the data relationships I chose to analyze. For instance I believed demographic factors such as race and sex would be connected, so I analyzed these in relationship to one another as well as to instances of murder. I attempted to mitigate this by analyzing factors which I had no preconceived notions would be related such as longitude/latitude, precincts and boroughs of New York. Additionally, I did not use certain data that I did not believe would be useful. Finally, there may be bias in the way the data was collected. 
+```{r ending}
+sessionInfo()
+```
